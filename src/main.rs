@@ -1,4 +1,5 @@
 use rand::prelude::*;
+use std::cmp::Ordering;
 use std::io;
 
 //Choose an undrawn card and return it's face/value as a tuple
@@ -46,7 +47,7 @@ fn reset_deck(deck: &mut [bool]) {
 #[inline(always)]
 fn draw_card_to_hand(deck: &mut [bool; 52], hand: &mut [(usize, usize); 10], hand_count: &mut usize) {
     hand[*hand_count] = draw_card(deck);   
-    *hand_count = *hand_count + 1;
+    *hand_count += 1;
 }
 
 fn main() {
@@ -65,13 +66,11 @@ fn main() {
 
     loop {
         let mut p_score;
-        let mut d_score;
-
 
         draw_card_to_hand(&mut card_in_play, &mut dealer_hand, &mut d_hand_count);
         draw_card_to_hand(&mut card_in_play, &mut dealer_hand, &mut d_hand_count);
 
-        d_score = calculate_hand_score(&dealer_hand, d_hand_count);
+        let d_score = calculate_hand_score(&dealer_hand, d_hand_count);
 
         draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
         draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
@@ -95,8 +94,10 @@ fn main() {
             user_response.clear();
             io::stdin().read_line(&mut user_response).expect("Invalid input");
 
-            println!("{}", user_response.chars().nth(0).unwrap());
-            if user_response.chars().nth(0).unwrap() == 'h' {
+            let first_char = user_response.chars().next().unwrap();
+
+            println!("{}", first_char);
+            if first_char == 'h' {
                 draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
 
                 p_score = calculate_hand_score(&player_hand, p_hand_count);
@@ -115,14 +116,11 @@ fn main() {
             }
         }
 
-        if p_score > d_score {
-            println!("You win!");
-        } else if p_score < d_score {
-            println!("Dealer wins!");
-        } else {
-            println!("Push");
-        }
-        
+        match p_score.cmp(&d_score) {
+            Ordering::Greater => println!("You win!"),
+            Ordering::Less => println!("Dealer wins!"),
+            Ordering::Equal =>  println!("Push"),
+        };       
 
         reset_deck(&mut card_in_play);
         p_hand_count = 0;

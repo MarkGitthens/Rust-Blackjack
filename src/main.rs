@@ -1,6 +1,7 @@
 
 use std::cmp::Ordering;
-use std::io;
+use std::io::{self, Write};
+use std::process;
 
 mod deck;
 use crate::deck::*;
@@ -54,9 +55,15 @@ fn draw_card_to_hand(deck: &mut Deck, hand: &mut Vec<Card>) {
 
 #[inline(always)]
 fn format_hand(hand: &Vec<Card>) -> String{
-    return String::from(format!("{}/{} {}/{} score: {}",
-        hand[0].suit.to_char(), hand[0].rank.to_char(),
-        hand[1].suit.to_char(), hand[1].rank.to_char(),
+
+    let mut output = String::new();
+
+    for i in hand {
+        let temp = String::from(format!("{}/{} ", i.rank.to_char(), i.suit.to_char())).to_owned();
+        output.push_str(&temp);
+    }
+    return String::from(format!("{} \nscore: {}\n",
+        output.to_owned(),
         calculate_score(hand)));
 }
 
@@ -80,38 +87,47 @@ fn main() {
         println!("Dealer: {}", format_hand(&dealer_hand));
         
         loop {
-            println!("(H)it or (S)tay: ");
+            print!("(H)it/(S)tay/(Q)uit: ");
+            io::stdout().flush().unwrap();
 
             user_response.clear();
             io::stdin().read_line(&mut user_response).expect("Invalid input");
 
             let first_char = user_response.chars().next().unwrap().to_ascii_lowercase();
 
-            if first_char == 'h' {
-                draw_card_to_hand(&mut deck, &mut player_hand);
+            match first_char {
+                'h' => {
+                    draw_card_to_hand(&mut deck, &mut player_hand);
 
-                println!("Player: {}", format_hand(&player_hand));
-                println!("Dealer: {}", format_hand(&dealer_hand));
+                    println!("Player: {}", format_hand(&player_hand));
+                    println!("Dealer: {}", format_hand(&dealer_hand));
 
-                if calculate_score(&player_hand) > 21 {
+                    if calculate_score(&player_hand) > 21 {
+                        break;
+                    }
+                }
+                'q' => {
+                    process::exit(0);
+                }
+                _ => {
                     break;
                 }
-            } else {
-                break;
             }
         }
 
         if calculate_score(&player_hand) > 21 {
             println!("You Bust!");
+            println!("\n");
             continue;
         }
-        
+
         match calculate_score(&player_hand).cmp(&calculate_score(&dealer_hand)) {
             Ordering::Greater => println!("You win!"),
             Ordering::Less => println!("Dealer wins!"),
             Ordering::Equal =>  println!("Push"),
         };       
 
+        println!("\n");
         deck.reset();
 
         player_hand.clear();

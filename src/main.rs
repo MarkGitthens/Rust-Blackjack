@@ -1,32 +1,38 @@
-use rand::prelude::*;
+
 use std::cmp::Ordering;
 use std::io;
 
-//Choose an undrawn card and return it's face/value as a tuple
-fn draw_card(deck: &mut [bool; 52]) -> (usize, usize) {
-    let mut rng = rand::thread_rng();
-    let mut num: i32 = rng.gen_range(0..51);
+mod deck;
+use crate::deck::*;
 
-    while deck[num as usize] {
-        num = rng.gen_range(0..51);
-    }
-
-    deck[num as usize] = true;
-
-    ((num/13) as usize, (num%13) as usize)
-}
-
-fn calculate_hand_score(hand: &[(usize, usize);10], hand_size: usize) -> usize {
+fn calculate_score(hand: &Vec<Card>) -> usize {
     let value_trans_table = [10,2,3,4,5,6,7,8,9,10,10,10,10];
     let mut num_aces: u8 = 0;
     let mut score: usize = 0;
 
-    for i in 0..hand_size {
-        if hand[i].1 == 0 {
-            num_aces += 1;
+    for i in 0..hand.len() {
+        match hand[i].rank {
+            Rank::Ace => {
+                num_aces += 1;
+            }
+            _ => {}
         }
 
-        score += value_trans_table[hand[i].1];
+        score += match hand[i].rank {
+            Rank::Ace => { value_trans_table[0] },
+            Rank::Two => { value_trans_table[1] },
+            Rank::Three => { value_trans_table[2] },
+            Rank::Four => { value_trans_table[3] },
+            Rank::Five => { value_trans_table[4] },
+            Rank::Six => { value_trans_table[5] },
+            Rank::Seven => { value_trans_table[6] },
+            Rank::Eight => { value_trans_table[7] },
+            Rank::Nine => { value_trans_table[8] },
+            Rank::Ten => { value_trans_table[9] },
+            Rank::Jack => { value_trans_table[10] },
+            Rank::Queen => { value_trans_table[11] },
+            Rank::King => { value_trans_table[12] },
+        }
     }
 
     //Get largest legal value as long as we have aces
@@ -38,55 +44,40 @@ fn calculate_hand_score(hand: &[(usize, usize);10], hand_size: usize) -> usize {
     score
 }
 
-fn reset_deck(deck: &mut [bool]) {
-    for i in deck {
-        *i = false;
+#[inline(always)]
+fn draw_card_to_hand(deck: &mut Deck, hand: &mut Vec<Card>) {
+    match deck.draw_shuffled() {
+        Ok(c) => { hand.push(c); },
+        Err(e) => {} 
     }
 }
 
 #[inline(always)]
-fn draw_card_to_hand(deck: &mut [bool; 52], hand: &mut [(usize, usize); 10], hand_count: &mut usize) {
-    hand[*hand_count] = draw_card(deck);   
-    *hand_count += 1;
+fn format_hand(hand: &Vec<Card>) -> String{
+    return String::from(format!("{}/{} {}/{} score: {}",
+        hand[0].suit.to_char(), hand[0].rank.to_char(),
+        hand[1].suit.to_char(), hand[1].rank.to_char(),
+        calculate_score(hand)));
 }
 
 fn main() {
-    let value_str_table = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
-    let face_str_table = ["D", "S", "H", "C"];
-
-    let mut card_in_play = [false; 52];
-
-    let mut player_hand: [(usize, usize); 10] = [(0, 0); 10];
-    let mut dealer_hand: [(usize, usize); 10] = [(0, 0); 10];
-
-    let mut p_hand_count = 0;
-    let mut d_hand_count = 0;
+    let mut deck = Deck::default();
+    deck.reset();   
 
     let mut user_response: String = String::new();
 
     loop {
-        let mut p_score;
+        let mut player_hand: Vec<Card> = Vec::new();
+        let mut dealer_hand: Vec<Card> = Vec::new();
 
-        draw_card_to_hand(&mut card_in_play, &mut dealer_hand, &mut d_hand_count);
-        draw_card_to_hand(&mut card_in_play, &mut dealer_hand, &mut d_hand_count);
+        draw_card_to_hand(&mut deck, &mut dealer_hand);
+        draw_card_to_hand(&mut deck, &mut dealer_hand);
 
-        let d_score = calculate_hand_score(&dealer_hand, d_hand_count);
-
-        draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
-        draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
-
-        p_score = calculate_hand_score(&player_hand, p_hand_count);
-        
-        println!("Dealer: {}/{} {}/{} score: {}",
-            face_str_table[dealer_hand[0].0], value_str_table[dealer_hand[0].1],
-            face_str_table[dealer_hand[1].0], value_str_table[dealer_hand[1].1],
-            d_score);
-
-        println!("You: {}/{} {}/{} score: {}",
-            face_str_table[player_hand[0].0], value_str_table[player_hand[0].1],
-            face_str_table[player_hand[1].0], value_str_table[player_hand[1].1],
-            p_score);
-
+        draw_card_to_hand(&mut deck, &mut player_hand);
+        draw_card_to_hand(&mut deck, &mut player_hand);
+       
+        println!("Player: {}", format_hand(&player_hand));
+        println!("Dealer: {}", format_hand(&dealer_hand));
         
         loop {
             println!("(H)it or (S)tay: ");
@@ -94,36 +85,36 @@ fn main() {
             user_response.clear();
             io::stdin().read_line(&mut user_response).expect("Invalid input");
 
-            let first_char = user_response.chars().next().unwrap();
+            let first_char = user_response.chars().next().unwrap().to_ascii_lowercase();
 
-            println!("{}", first_char);
             if first_char == 'h' {
-                draw_card_to_hand(&mut card_in_play, &mut player_hand, &mut p_hand_count);
+                draw_card_to_hand(&mut deck, &mut player_hand);
 
-                p_score = calculate_hand_score(&player_hand, p_hand_count);
+                println!("Player: {}", format_hand(&player_hand));
+                println!("Dealer: {}", format_hand(&dealer_hand));
 
-                println!("Dealer: {}/{} {}/{} score: {}",
-                    face_str_table[dealer_hand[0].0], value_str_table[dealer_hand[0].1],
-                    face_str_table[dealer_hand[1].0], value_str_table[dealer_hand[1].1],
-                    d_score);
-
-                println!("You: {}/{} {}/{} score: {}",
-                    face_str_table[player_hand[0].0], value_str_table[player_hand[0].1],
-                    face_str_table[player_hand[1].0], value_str_table[player_hand[1].1],
-                    p_score);
+                if calculate_score(&player_hand) > 21 {
+                    break;
+                }
             } else {
                 break;
             }
         }
 
-        match p_score.cmp(&d_score) {
+        if calculate_score(&player_hand) > 21 {
+            println!("You Bust!");
+            continue;
+        }
+        
+        match calculate_score(&player_hand).cmp(&calculate_score(&dealer_hand)) {
             Ordering::Greater => println!("You win!"),
             Ordering::Less => println!("Dealer wins!"),
             Ordering::Equal =>  println!("Push"),
         };       
 
-        reset_deck(&mut card_in_play);
-        p_hand_count = 0;
-        d_hand_count = 0;
+        deck.reset();
+
+        player_hand.clear();
+        dealer_hand.clear();
     }
 }

@@ -2,9 +2,7 @@
 use std::cmp::Ordering;
 use std::io::{self, Write};
 use std::process;
-
-mod deck;
-use crate::deck::*;
+use std_deck::deck::*;
 
 fn calculate_score(hand: &Vec<Card>) -> usize {
     let value_trans_table = [10,2,3,4,5,6,7,8,9,10,10,10,10];
@@ -49,7 +47,7 @@ fn calculate_score(hand: &Vec<Card>) -> usize {
 fn draw_card_to_hand(deck: &mut Deck, hand: &mut Vec<Card>) {
     match deck.draw_shuffled() {
         Ok(c) => { hand.push(c); },
-        Err(e) => {} 
+        Err(_e) => {} 
     }
 }
 

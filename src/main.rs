@@ -9,15 +9,12 @@ fn calculate_score(hand: &Vec<Card>) -> usize {
     let mut num_aces: u8 = 0;
     let mut score: usize = 0;
 
-    for i in 0..hand.len() {
-        match hand[i].rank {
-            Rank::Ace => {
-                num_aces += 1;
-            }
-            _ => {}
+    for i in hand {
+        if let Rank::Ace = i.rank {
+            num_aces += 1;
         }
 
-        score += match hand[i].rank {
+        score += match i.rank {
             Rank::Ace => { value_trans_table[0] },
             Rank::Two => { value_trans_table[1] },
             Rank::Three => { value_trans_table[2] },
@@ -45,9 +42,8 @@ fn calculate_score(hand: &Vec<Card>) -> usize {
 
 #[inline(always)]
 fn draw_card_to_hand(deck: &mut Deck, hand: &mut Vec<Card>) {
-    match deck.draw_shuffled() {
-        Ok(c) => { hand.push(c); },
-        Err(_e) => {} 
+    if let Some(c) =  deck.draw_shuffled() {
+        hand.push(c);
     }
 }
 
@@ -57,12 +53,12 @@ fn format_hand(hand: &Vec<Card>) -> String{
     let mut output = String::new();
 
     for i in hand {
-        let temp = String::from(format!("{}/{} ", i.rank.to_char(), i.suit.to_char())).to_owned();
+        let temp = format!("{}/{} ", i.rank.to_char(), i.suit.to_char()).to_owned();
         output.push_str(&temp);
     }
-    return String::from(format!("{} \nscore: {}\n",
+    format!("{} \nscore: {}\n",
         output.to_owned(),
-        calculate_score(hand)));
+        calculate_score(hand))
 }
 
 fn main() {

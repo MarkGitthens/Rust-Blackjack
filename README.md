@@ -1,5 +1,8 @@
 # Rust-Blackjack
 
-Basic CLI for a single-player blackjack game that I'm using to get back into the swing of Rust development.
+Basic CLI for a single-player blackjack game making use of a self-made deck of card library
 
-Makes use of a new module designed to create and manage a standard 52 size deck of cards.
+# Dependencies
+1. Rand (0.8.5)
+2. std_deck (Must be pulled from here (https://github.com/MarkGitthens/52CardDeck)
+    - Place in the same directory you cloned this project into to ensure it is found!
